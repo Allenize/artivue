@@ -36,11 +36,9 @@ export function ExploreScreen() {
         {q && <button onClick={() => setQ('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--light-text)' }}><X size={13} /></button>}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: '.6rem', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1.2rem', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4, flexWrap: 'wrap' }}>
         {cats.map(c => <button key={c} onClick={() => setCat(c)} style={{ flexShrink: 0, padding: '5px 13px', borderRadius: 20, fontSize: 10, fontFamily: 'Jost,sans-serif', cursor: 'pointer', border: '1px solid', transition: 'all .2s', background: cat === c ? 'var(--dark-text)' : 'var(--card-bg)', color: cat === c ? 'var(--cream)' : 'var(--mid-text)', borderColor: cat === c ? 'transparent' : 'var(--border)' }}>{c}</button>)}
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: '1.2rem', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
-        {eras.map(e => <button key={e} onClick={() => setEra(e)} style={{ flexShrink: 0, padding: '5px 13px', borderRadius: 20, fontSize: 10, fontFamily: 'Jost,sans-serif', cursor: 'pointer', border: '1px solid', transition: 'all .2s', background: era === e ? 'var(--accent-rust)' : 'var(--card-bg)', color: era === e ? '#fff' : 'var(--mid-text)', borderColor: era === e ? 'transparent' : 'var(--border)' }}>{e}</button>)}
+        {eras.filter(e => e !== 'All').map(e => <button key={e} onClick={() => setEra(era === e ? 'All' : e)} style={{ flexShrink: 0, padding: '5px 13px', borderRadius: 20, fontSize: 10, fontFamily: 'Jost,sans-serif', cursor: 'pointer', border: '1px solid', transition: 'all .2s', background: era === e ? 'var(--accent-rust)' : 'var(--card-bg)', color: era === e ? '#fff' : 'var(--mid-text)', borderColor: era === e ? 'transparent' : 'var(--border)' }}>{e}</button>)}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -57,7 +55,6 @@ export function ExploreScreen() {
                 <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 17, fontStyle: 'italic', color: 'var(--dark-text)', lineHeight: 1.2, marginBottom: 3 }}>{art.title}</div>
                 <div style={{ fontSize: 10, color: 'var(--accent-rust)', marginBottom: 5 }}>{art.artist} · {art.year}</div>
                 <div style={{ fontSize: 10, color: 'var(--light-text)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{art.description}</div>
-                <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>{art.tags?.map(tag => <span key={tag} className="tag">{tag}</span>)}</div>
               </div>
               <div style={{ padding: '12px 12px 0 0' }}>
                 <button onClick={e => { e.stopPropagation(); toggleFavorite(art.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
@@ -105,8 +102,7 @@ export function ArtworksScreen() {
             <div style={{ padding: '10px 12px' }}>
               <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 15, fontStyle: 'italic', color: 'var(--dark-text)', lineHeight: 1.2, marginBottom: 3 }}>{art.title}</div>
               <div style={{ fontSize: 10, color: 'var(--accent-rust)', marginBottom: 5 }}>{art.artist}</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="tag">{art.movement}</span>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <span style={{ fontSize: 10, color: 'var(--light-text)' }}>{art.year}</span>
               </div>
             </div>
