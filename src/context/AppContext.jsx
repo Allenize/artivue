@@ -100,15 +100,21 @@ export function AppProvider({ children }) {
   }, [currentUser, favorites, addNotification])
 
   const addArtwork = useCallback(async (data) => {
-    const { _imageBase64, ...rest } = data
-    await dbService.addArtwork(rest, _imageBase64)
-    await loadData()
+    try {
+      const { image, ...rest } = data
+      await dbService.addArtwork(rest, image?.startsWith('data:') ? image : null)
+      await loadData()
+    } catch(e) { console.error('addArtwork error:', e) }
   }, [loadData])
 
   const updateArtwork = useCallback(async (id, data) => {
-    const { _imageBase64, ...rest } = data
-    await dbService.updateArtwork(id, rest, _imageBase64)
-    await loadData()
+    try {
+      const { image, ...rest } = data
+      const imageBase64 = image?.startsWith('data:') ? image : null
+      const imageUrl = image?.startsWith('http') ? image : null
+      await dbService.updateArtwork(id, { ...rest, image: imageUrl }, imageBase64)
+      await loadData()
+    } catch(e) { console.error('updateArtwork error:', e) }
   }, [loadData])
 
   const deleteArtwork = useCallback(async (id) => {
@@ -132,15 +138,21 @@ export function AppProvider({ children }) {
   }, [])
 
   const addArtist = useCallback(async (data) => {
-    const { _imageBase64, ...rest } = data
-    await dbService.addArtist(rest, _imageBase64)
-    await loadData()
+    try {
+      const { image, ...rest } = data
+      await dbService.addArtist(rest, image?.startsWith('data:') ? image : null)
+      await loadData()
+    } catch(e) { console.error('addArtist error:', e) }
   }, [loadData])
 
   const updateArtist = useCallback(async (id, data) => {
-    const { _imageBase64, ...rest } = data
-    await dbService.updateArtist(id, rest, _imageBase64)
-    await loadData()
+    try {
+      const { image, ...rest } = data
+      const imageBase64 = image?.startsWith('data:') ? image : null
+      const imageUrl = image?.startsWith('http') ? image : null
+      await dbService.updateArtist(id, { ...rest, image: imageUrl }, imageBase64)
+      await loadData()
+    } catch(e) { console.error('updateArtist error:', e) }
   }, [loadData])
 
   const deleteArtist = useCallback(async (id) => {

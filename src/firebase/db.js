@@ -6,22 +6,25 @@ import { db } from './config'
 
 // ── ARTWORKS ────────────────────────────────────────────────────────
 export async function getArtworks() {
-  const q = query(collection(db, 'artworks'), orderBy('createdAt', 'desc'))
-  const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  try {
+    const q = query(collection(db, 'artworks'), orderBy('createdAt', 'desc'))
+    const snap = await getDocs(q)
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  } catch(e) { console.error('getArtworks:', e); return [] }
 }
 
-export async function addArtwork(data) {
-  return await addDoc(collection(db, 'artworks'), {
-    ...data,
-    likes: [],
-    views: 0,
-    createdAt: serverTimestamp(),
-  })
+export async function addArtwork(data, imageBase64) {
+  const payload = { ...data, likes: [], views: 0, createdAt: serverTimestamp() }
+  if (imageBase64) payload.image = imageBase64
+  return await addDoc(collection(db, 'artworks'), payload)
 }
 
-export async function updateArtwork(id, data) {
-  await updateDoc(doc(db, 'artworks', id), { ...data, updatedAt: serverTimestamp() })
+export async function updateArtwork(id, data, imageBase64) {
+  const payload = { ...data, updatedAt: serverTimestamp() }
+  if (imageBase64) payload.image = imageBase64
+  // Remove undefined fields
+  Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k])
+  await updateDoc(doc(db, 'artworks', id), payload)
 }
 
 export async function deleteArtwork(id) {
@@ -40,25 +43,31 @@ export async function likeArtwork(id, userId) {
 }
 
 export async function incrementViews(id) {
-  await updateDoc(doc(db, 'artworks', id), { views: increment(1) })
+  try {
+    await updateDoc(doc(db, 'artworks', id), { views: increment(1) })
+  } catch(e) { console.error('incrementViews:', e) }
 }
 
 // ── ARTISTS ─────────────────────────────────────────────────────────
 export async function getArtists() {
-  const q = query(collection(db, 'artists'), orderBy('createdAt', 'desc'))
-  const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  try {
+    const q = query(collection(db, 'artists'), orderBy('createdAt', 'desc'))
+    const snap = await getDocs(q)
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  } catch(e) { console.error('getArtists:', e); return [] }
 }
 
-export async function addArtist(data) {
-  return await addDoc(collection(db, 'artists'), {
-    ...data,
-    createdAt: serverTimestamp(),
-  })
+export async function addArtist(data, imageBase64) {
+  const payload = { ...data, createdAt: serverTimestamp() }
+  if (imageBase64) payload.image = imageBase64
+  return await addDoc(collection(db, 'artists'), payload)
 }
 
-export async function updateArtist(id, data) {
-  await updateDoc(doc(db, 'artists', id), { ...data, updatedAt: serverTimestamp() })
+export async function updateArtist(id, data, imageBase64) {
+  const payload = { ...data, updatedAt: serverTimestamp() }
+  if (imageBase64) payload.image = imageBase64
+  Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k])
+  await updateDoc(doc(db, 'artists', id), payload)
 }
 
 export async function deleteArtist(id) {
@@ -67,22 +76,17 @@ export async function deleteArtist(id) {
 
 // ── COMMUNITY ────────────────────────────────────────────────────────
 export async function getCommunityPosts() {
-  const q = query(collection(db, 'community'), orderBy('createdAt', 'desc'))
-  const snap = await getDocs(q)
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  try {
+    const q = query(collection(db, 'community'), orderBy('createdAt', 'desc'))
+    const snap = await getDocs(q)
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+  } catch(e) { console.error('getCommunityPosts:', e); return [] }
 }
 
-export async function addCommunityPost(data, userId, userName, userInitials) {
-  return await addDoc(collection(db, 'community'), {
-    ...data,
-    userId,
-    userName,
-    userInitials,
-    likes: [],
-    comments: [],
-    status: 'pending',
-    createdAt: serverTimestamp(),
-  })
+export async function addCommunityPost(data, userId, userName, userInitials, imageBase64) {
+  const payload = { ...data, userId, userName, userInitials, likes: [], comments: [], status: 'pending', createdAt: serverTimestamp() }
+  if (imageBase64) payload.image = imageBase64
+  return await addDoc(collection(db, 'community'), payload)
 }
 
 export async function approvePost(id) {
@@ -120,6 +124,8 @@ export async function toggleFavorite(userId, artworkId, isFav) {
 }
 
 export async function getUserFavorites(userId) {
-  const snap = await getDoc(doc(db, 'users', userId))
-  return snap.data()?.favorites || []
+  try {
+    const snap = await getDoc(doc(db, 'users', userId))
+    return snap.data()?.favorites || []
+  } catch(e) { return [] }
 }

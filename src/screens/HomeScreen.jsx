@@ -133,7 +133,7 @@ export default function HomeScreen() {
         <button onClick={() => navigate('/artists')} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--accent-rust)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>See all <ChevronRight size={11} /></button>
       </div>
       <div style={{ display: 'flex', gap: 14, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4, marginBottom: '1.8rem' }}>
-        {artists.map((artist, i) => (
+        {artists.slice(0, 6).map((artist, i) => (
           <motion.div key={artist.id} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
             onClick={() => navigate('/artists')}
             initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .1 + i * .04 }}

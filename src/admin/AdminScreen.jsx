@@ -277,7 +277,7 @@ export default function AdminScreen() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {artworks.map(art => (
                 <div key={art.id}>
-                  <AnimatePresence>{artworkForm?.id === art.id && <ArtworkForm artwork={artworkForm} artists={artists} categories={categories} movements={movements} onSave={d => { updateArtwork(d); setArtworkForm(null); addNotification('Artwork updated!') }} onCancel={() => setArtworkForm(null)} />}</AnimatePresence>
+                  <AnimatePresence>{artworkForm?.id === art.id && <ArtworkForm artwork={artworkForm} artists={artists} categories={categories} movements={movements} onSave={d => { updateArtwork(d.id, d); setArtworkForm(null); addNotification('Artwork updated! ✨') }} onCancel={() => setArtworkForm(null)} />}</AnimatePresence>
                   {artworkForm?.id !== art.id && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '12px 14px' }}>
                       <div style={{ width: 56, height: 56, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
@@ -314,7 +314,7 @@ export default function AdminScreen() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {artists.map(artist => (
                 <div key={artist.id}>
-                  <AnimatePresence>{artistForm?.id === artist.id && <ArtistForm artist={artistForm} onSave={d => { updateArtist(d); setArtistForm(null); addNotification('Artist updated!') }} onCancel={() => setArtistForm(null)} />}</AnimatePresence>
+                  <AnimatePresence>{artistForm?.id === artist.id && <ArtistForm artist={artistForm} onSave={d => { updateArtist(d.id, d); setArtistForm(null); addNotification('Artist updated! 🎨') }} onCancel={() => setArtistForm(null)} />}</AnimatePresence>
                   {artistForm?.id !== artist.id && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '12px 14px' }}>
                       <div style={{ width: 46, height: 46, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--border)' }}>
