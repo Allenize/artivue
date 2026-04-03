@@ -1,7 +1,37 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
 import { ArrowLeft, Heart, MapPin, Calendar, Layers, Ruler, Eye, ThumbsUp } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+
+function extractColors(imageUrl, count = 8) {
+  return new Promise((resolve) => {
+    if (!imageUrl) { resolve([]); return }
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const size = 80
+      canvas.width = size; canvas.height = size
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, size, size)
+      const data = ctx.getImageData(0, 0, size, size).data
+      const colorMap = {}
+      for (let i = 0; i < data.length; i += 12) {
+        const r = Math.round(data[i] / 28) * 28
+        const g = Math.round(data[i+1] / 28) * 28
+        const b = Math.round(data[i+2] / 28) * 28
+        if (data[i+3] < 128) continue
+        const key = `${r},${g},${b}`
+        colorMap[key] = (colorMap[key] || 0) + 1
+      }
+      const sorted = Object.entries(colorMap).sort((a,b) => b[1]-a[1]).slice(0, count).map(([k]) => { const [r,g,b] = k.split(','); return `rgb(${r},${g},${b})` })
+      resolve(sorted)
+    }
+    img.onerror = () => resolve([])
+    img.src = imageUrl
+  })
+}
 
 export default function ArtworkDetailScreen() {
   const { id } = useParams()
@@ -12,6 +42,12 @@ export default function ArtworkDetailScreen() {
   const isFav = favorites.includes(art?.id)
   const isLiked = currentUser && art?.likes?.includes(currentUser.id)
   const related = artworks.filter(a => a.id !== art?.id && (a.artistId === art?.artistId || a.category === art?.category)).slice(0, 4)
+  const [colors, setColors] = useState([])
+
+  useEffect(() => {
+    if (art?.image) extractColors(art.image, 8).then(setColors)
+    else setColors([])
+  }, [art?.image])
 
   if (!art) return <div style={{ padding: '2rem' }}>Artwork not found.</div>
 
@@ -64,6 +100,21 @@ export default function ArtworkDetailScreen() {
             </div>
           ))}
         </div>
+
+        {/* Color Palette */}
+        {colors.length > 0 && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--dark-text)', marginBottom: 10 }}>Color Palette</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {colors.map((color, i) => (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: color, border: '1px solid var(--border)', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }} />
+                  <div style={{ fontSize: 8, color: 'var(--light-text)', letterSpacing: '.04em' }}>{color.replace('rgb(','').replace(')','').split(',').map(n => parseInt(n).toString(16).padStart(2,'0')).join('').toUpperCase()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Description */}
         <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--dark-text)', marginBottom: 10 }}>{t.aboutArtwork}</div>

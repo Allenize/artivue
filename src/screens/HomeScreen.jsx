@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Heart, ChevronRight, ChevronLeft, Star } from 'lucide-react'
+import { Search, Heart, ChevronRight, ChevronLeft, Star, RefreshCw } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const FACTS = [
@@ -10,8 +10,75 @@ const FACTS = [
   "Picasso could draw before he could walk, and his first word was 'piz' — short for lápiz (pencil in Spanish).",
   "Monet had cataracts while painting the later Water Lilies — his blurry vision may have enhanced their dreamy quality.",
   "Frida Kahlo survived a near-fatal bus accident and spent her recovery painting her first self-portraits.",
+  "Rembrandt created over 80 self-portraits — more than any other artist in history.",
+  "The Sistine Chapel ceiling took Michelangelo 4 years to paint (1508–1512).",
 ]
 
+// ── COLOR EXTRACTOR ──────────────────────────────────────────────────
+function extractColors(imageUrl, count = 5) {
+  return new Promise((resolve) => {
+    if (!imageUrl || imageUrl.startsWith('linear-gradient')) {
+      resolve([])
+      return
+    }
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const size = 60
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, size, size)
+      const data = ctx.getImageData(0, 0, size, size).data
+      const colorMap = {}
+      for (let i = 0; i < data.length; i += 16) {
+        const r = Math.round(data[i] / 32) * 32
+        const g = Math.round(data[i+1] / 32) * 32
+        const b = Math.round(data[i+2] / 32) * 32
+        const a = data[i+3]
+        if (a < 128) continue
+        const key = `${r},${g},${b}`
+        colorMap[key] = (colorMap[key] || 0) + 1
+      }
+      const sorted = Object.entries(colorMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, count)
+        .map(([k]) => {
+          const [r, g, b] = k.split(',')
+          return `rgb(${r},${g},${b})`
+        })
+      resolve(sorted)
+    }
+    img.onerror = () => resolve([])
+    img.src = imageUrl
+  })
+}
+
+// ── COLOR PALETTE DISPLAY ────────────────────────────────────────────
+function ColorPalette({ imageUrl }) {
+  const [colors, setColors] = useState([])
+  useEffect(() => {
+    if (!imageUrl) return
+    extractColors(imageUrl, 5).then(setColors)
+  }, [imageUrl])
+  if (!colors.length) return null
+  return (
+    <div style={{ display: 'flex', gap: 3, marginTop: 5 }}>
+      {colors.map((color, i) => (
+        <div key={i} title={color} style={{
+          width: 14, height: 14, borderRadius: '50%',
+          background: color,
+          border: '1.5px solid rgba(255,255,255,0.4)',
+          flexShrink: 0,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+        }} />
+      ))}
+    </div>
+  )
+}
+
+// ── ART CARD ─────────────────────────────────────────────────────────
 function ArtCard({ art, onFav, isFav, onClick }) {
   return (
     <motion.div className="card" style={{ cursor: 'pointer', overflow: 'hidden', flexShrink: 0 }}
@@ -32,41 +99,78 @@ function ArtCard({ art, onFav, isFav, onClick }) {
           <span className="tag">{art.category}</span>
           <span style={{ fontSize: 10, color: 'var(--light-text)' }}>{art.year}</span>
         </div>
+        {art.image && <ColorPalette imageUrl={art.image} />}
       </div>
     </motion.div>
   )
 }
 
+// ── HOME SCREEN ───────────────────────────────────────────────────────
 export default function HomeScreen() {
   const navigate = useNavigate()
-  const { artworks, artists, favorites, toggleFavorite, t, viewArtwork } = useApp()
+  const { artworks, artists, favorites, toggleFavorite, t, viewArtwork, loadData, dataLoading } = useApp()
   const [slide, setSlide] = useState(0)
-  const [factIdx] = useState(Math.floor(Math.random() * FACTS.length))
+  const [factIdx, setFactIdx] = useState(Math.floor(Math.random() * FACTS.length))
   const [catFilter, setCatFilter] = useState('All')
+  const [artistIdx, setArtistIdx] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const bottomRef = useRef(null)
+  const artistsPerPage = 6
 
   const featured = artworks.filter(a => a.featured).slice(0, 5)
-  const cats = ['All', ...new Set(artworks.map(a => a.category))]
+  const cats = ['All', ...new Set(artworks.map(a => a.category).filter(Boolean))]
   const filtered = catFilter === 'All' ? artworks.slice(0, 8) : artworks.filter(a => a.category === catFilter).slice(0, 8)
 
+  // Artist scrolling with chevrons
+  const visibleArtists = artists.slice(artistIdx, artistIdx + artistsPerPage)
+  const canPrevArtist = artistIdx > 0
+  const canNextArtist = artistIdx + artistsPerPage < artists.length
+
+  // Carousel auto-slide
   const nextSlide = useCallback(() => setSlide(s => (s + 1) % (featured.length || 1)), [featured.length])
   const prevSlide = useCallback(() => setSlide(s => (s - 1 + (featured.length || 1)) % (featured.length || 1)), [featured.length])
 
   useEffect(() => {
     if (!featured.length) return
-    const t = setInterval(nextSlide, 4500)
-    return () => clearInterval(t)
+    const timer = setInterval(nextSlide, 4500)
+    return () => clearInterval(timer)
   }, [nextSlide, featured.length])
+
+  // ── PULL TO REFRESH / scroll to bottom refresh ──
+  useEffect(() => {
+    const observer = new IntersectionObserver(async (entries) => {
+      if (entries[0].isIntersecting && !refreshing && !dataLoading) {
+        setRefreshing(true)
+        setFactIdx(Math.floor(Math.random() * FACTS.length))
+        await loadData()
+        setRefreshing(false)
+      }
+    }, { threshold: 1.0 })
+    if (bottomRef.current) observer.observe(bottomRef.current)
+    return () => observer.disconnect()
+  }, [loadData, refreshing, dataLoading])
 
   const currentArt = featured[slide]
 
   return (
     <div className="page">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
         <div>
           <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 26, fontWeight: 300, color: 'var(--dark-text)' }}>Discover Art</div>
           <div style={{ fontSize: 11, color: 'var(--light-text)', marginTop: 2 }}>{artworks.length} masterpieces in our collection</div>
         </div>
+        <motion.button
+          onClick={async () => { setRefreshing(true); await loadData(); setRefreshing(false) }}
+          style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--mid-text)', fontFamily: 'Jost,sans-serif' }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <motion.div animate={{ rotate: refreshing ? 360 : 0 }} transition={{ duration: 1, repeat: refreshing ? Infinity : 0, ease: 'linear' }}>
+            <RefreshCw size={13} strokeWidth={1.5} />
+          </motion.div>
+          {refreshing ? 'Refreshing…' : 'Refresh'}
+        </motion.button>
       </motion.div>
 
       {/* Search */}
@@ -80,9 +184,8 @@ export default function HomeScreen() {
       {/* ── CAROUSEL ── */}
       {featured.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .12 }}
-          style={{ position: 'relative', borderRadius: 'var(--r-lg)', overflow: 'hidden', height: 280, marginBottom: '1.8rem', cursor: 'pointer', background: currentArt?.gradient }}
+          style={{ position: 'relative', borderRadius: 'var(--r-lg)', overflow: 'hidden', height: 280, marginBottom: '1.8rem', cursor: 'pointer', background: currentArt?.gradient || '#222' }}
           onClick={() => { viewArtwork(currentArt.id); navigate(`/artwork/${currentArt.id}`) }}>
-
           <AnimatePresence mode="wait">
             <motion.div key={slide} initial={{ opacity: 0, scale: 1.04 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: .5 }}
               style={{ position: 'absolute', inset: 0 }}>
@@ -91,10 +194,7 @@ export default function HomeScreen() {
                 : <div style={{ width: '100%', height: '100%', background: currentArt?.gradient }} />}
             </motion.div>
           </AnimatePresence>
-
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right,rgba(0,0,0,.65) 0%,rgba(0,0,0,.1) 100%)' }} />
-
-          {/* Text overlay */}
           <AnimatePresence mode="wait">
             <motion.div key={`txt-${slide}`} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: .4 }}
               style={{ position: 'absolute', bottom: 24, left: 24, right: 80 }}>
@@ -106,8 +206,6 @@ export default function HomeScreen() {
               </div>
             </motion.div>
           </AnimatePresence>
-
-          {/* Prev/Next */}
           <button onClick={e => { e.stopPropagation(); prevSlide() }}
             style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,.2)', backdropFilter: 'blur(4px)', border: 'none', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
             <ChevronLeft size={16} />
@@ -116,8 +214,6 @@ export default function HomeScreen() {
             style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,.2)', backdropFilter: 'blur(4px)', border: 'none', borderRadius: '50%', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
             <ChevronRight size={16} />
           </button>
-
-          {/* Dots */}
           <div style={{ position: 'absolute', bottom: 12, right: 16, display: 'flex', gap: 5 }}>
             {featured.map((_, i) => (
               <button key={i} onClick={e => { e.stopPropagation(); setSlide(i) }}
@@ -127,25 +223,51 @@ export default function HomeScreen() {
         </motion.div>
       )}
 
-      {/* ── ARTISTS ── */}
+      {/* ── ARTISTS with chevrons ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.8rem' }}>
         <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--dark-text)' }}>{t.artists}</div>
         <button onClick={() => navigate('/artists')} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--accent-rust)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>See all <ChevronRight size={11} /></button>
       </div>
-      <div style={{ display: 'flex', gap: 14, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4, marginBottom: '1.8rem' }}>
-        {artists.slice(0, 6).map((artist, i) => (
-          <motion.div key={artist.id} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-            onClick={() => navigate('/artists')}
-            initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .1 + i * .04 }}
-            whileHover={{ y: -3 }}>
-            <div style={{ width: 58, height: 58, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border)', position: 'relative' }}>
-              {artist.image
-                ? <img src={artist.image} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : <div style={{ width: '100%', height: '100%', background: artist.color || artist.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cormorant Garamond,serif', fontSize: 18, color: '#fff', fontStyle: 'italic' }}>{artist.initials}</div>}
-            </div>
-            <div style={{ fontSize: 9.5, color: 'var(--mid-text)', textAlign: 'center', maxWidth: 60, lineHeight: 1.3 }}>{artist.short}</div>
-          </motion.div>
-        ))}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1.8rem' }}>
+        {/* Left chevron */}
+        <motion.button
+          onClick={() => setArtistIdx(i => Math.max(0, i - 1))}
+          disabled={!canPrevArtist}
+          style={{ background: canPrevArtist ? 'var(--card-bg)' : 'transparent', border: `1px solid ${canPrevArtist ? 'var(--border)' : 'transparent'}`, borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: canPrevArtist ? 'pointer' : 'default', color: canPrevArtist ? 'var(--mid-text)' : 'transparent', flexShrink: 0, transition: 'all .2s' }}
+          whileTap={canPrevArtist ? { scale: 0.9 } : {}}>
+          <ChevronLeft size={15} />
+        </motion.button>
+
+        {/* Artists row */}
+        <div style={{ flex: 1, display: 'flex', gap: 14, overflow: 'hidden', justifyContent: 'space-around' }}>
+          <AnimatePresence mode="wait">
+            {visibleArtists.map((artist, i) => (
+              <motion.div key={artist.id}
+                style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer', flex: 1, maxWidth: 70 }}
+                onClick={() => navigate('/artists')}
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ delay: i * .04 }}
+                whileHover={{ y: -3 }}>
+                <div style={{ width: 52, height: 52, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border)', flexShrink: 0, transition: 'border-color .2s' }}>
+                  {artist.image
+                    ? <img src={artist.image} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{ width: '100%', height: '100%', background: artist.color || '#8B5E3C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cormorant Garamond,serif', fontSize: 18, color: '#fff', fontStyle: 'italic' }}>{artist.initials}</div>}
+                </div>
+                <div style={{ fontSize: 9.5, color: 'var(--mid-text)', textAlign: 'center', lineHeight: 1.3, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{artist.short || artist.name}</div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+
+        {/* Right chevron */}
+        <motion.button
+          onClick={() => setArtistIdx(i => Math.min(artists.length - artistsPerPage, i + 1))}
+          disabled={!canNextArtist}
+          style={{ background: canNextArtist ? 'var(--card-bg)' : 'transparent', border: `1px solid ${canNextArtist ? 'var(--border)' : 'transparent'}`, borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: canNextArtist ? 'pointer' : 'default', color: canNextArtist ? 'var(--mid-text)' : 'transparent', flexShrink: 0, transition: 'all .2s' }}
+          whileTap={canNextArtist ? { scale: 0.9 } : {}}>
+          <ChevronRight size={15} />
+        </motion.button>
       </div>
 
       {/* ── DID YOU KNOW ── */}
@@ -164,6 +286,7 @@ export default function HomeScreen() {
         <button onClick={() => navigate('/artworks')} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--accent-rust)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>See all <ChevronRight size={11} /></button>
       </div>
 
+      {/* Category filters */}
       <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
         {cats.map(cat => (
           <button key={cat} onClick={() => setCatFilter(cat)} style={{ flexShrink: 0, padding: '6px 14px', borderRadius: 20, fontSize: 11, fontFamily: 'Jost,sans-serif', cursor: 'pointer', border: '1px solid', transition: 'all .2s', background: catFilter === cat ? 'var(--dark-text)' : 'var(--card-bg)', color: catFilter === cat ? 'var(--cream)' : 'var(--mid-text)', borderColor: catFilter === cat ? 'transparent' : 'var(--border)' }}>
@@ -178,6 +301,19 @@ export default function HomeScreen() {
             <ArtCard art={art} isFav={favorites.includes(art.id)} onFav={toggleFavorite} onClick={() => { viewArtwork(art.id); navigate(`/artwork/${art.id}`) }} />
           </motion.div>
         ))}
+      </div>
+
+      {/* ── BOTTOM REFRESH TRIGGER ── */}
+      <div ref={bottomRef} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem', gap: 8 }}>
+        {refreshing ? (
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
+            <RefreshCw size={16} strokeWidth={1.5} style={{ color: 'var(--light-text)' }} />
+          </motion.div>
+        ) : (
+          <div style={{ fontSize: 10, color: 'var(--light-text)', letterSpacing: '.1em', textTransform: 'uppercase' }}>
+            Scroll down to refresh
+          </div>
+        )}
       </div>
     </div>
   )
