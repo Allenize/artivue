@@ -16,9 +16,43 @@ const GRADIENTS = [
   'linear-gradient(135deg,#3A1A3A,#7A2A7A,#C4622D)',
   'linear-gradient(135deg,#1A2A3A,#2A5A8A,#4A9AC4)',
 ]
-const MOVEMENTS = ['Renaissance','Post-Impressionism','Impressionism','Cubism','Surrealism','Abstract','Baroque','Romanticism','Modern']
-const CATEGORIES = ['Portrait','Landscape','Still Life','Abstract','Historical','Religious']
+const DEFAULT_MOVEMENTS = ['Renaissance','Post-Impressionism','Impressionism','Cubism','Surrealism','Abstract','Baroque','Romanticism','Modern']
+const DEFAULT_CATEGORIES = ['Portrait','Landscape','Still Life','Abstract','Historical','Religious']
 const COLORS = ['#7A4B1A','#2B4FA0','#6B3A8B','#2A7A5A','#8B6A2A','#A03A3A','#4A8B6A','#8B3A6A','#3A6A8B']
+
+function TagManager({ label, items, onAdd, onDelete }) {
+  const [newItem, setNewItem] = useState('')
+  return (
+    <div style={{ marginBottom: '.65rem' }}>
+      <div style={{ fontSize: 10, color: 'var(--light-text)', letterSpacing: '.1em', textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+        {items.map(item => (
+          <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--beige)', border: '1px solid var(--border)', borderRadius: 20, padding: '3px 10px', fontSize: 11, color: 'var(--mid-text)' }}>
+            {item}
+            <button onClick={() => onDelete(item)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--light-text)', display: 'flex', padding: 0, marginLeft: 2 }}>
+              <X size={10} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input
+          className="field"
+          placeholder={`Add new ${label.toLowerCase()}…`}
+          value={newItem}
+          onChange={e => setNewItem(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && newItem.trim()) { onAdd(newItem.trim()); setNewItem('') } }}
+          style={{ marginBottom: 0, flex: 1 }}
+        />
+        <button
+          onClick={() => { if (newItem.trim()) { onAdd(newItem.trim()); setNewItem('') } }}
+          style={{ background: 'var(--dark-text)', color: 'var(--cream)', border: 'none', borderRadius: 8, padding: '0 14px', cursor: 'pointer', fontSize: 11, fontFamily: 'Jost,sans-serif', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+          <Plus size={12} /> Add
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function StatCard({ label, value, icon: Icon, color, sub }) {
   return (
@@ -35,8 +69,8 @@ function StatCard({ label, value, icon: Icon, color, sub }) {
   )
 }
 
-function ArtworkForm({ artwork, artists, onSave, onCancel }) {
-  const [f, setF] = useState(artwork || { title: '', artist: '', artistId: '', year: new Date().getFullYear(), movement: MOVEMENTS[0], category: CATEGORIES[0], medium: 'Oil on canvas', dimensions: '', location: '', gradient: GRADIENTS[0], accent: '#A0C0F0', description: '', tags: '', fact: '', image: null, featured: false })
+function ArtworkForm({ artwork, artists, categories, movements, onSave, onCancel }) {
+  const [f, setF] = useState(artwork || { title: '', artist: '', artistId: '', year: new Date().getFullYear(), movement: movements[0] || '', category: categories[0] || '', medium: 'Oil on canvas', dimensions: '', location: '', gradient: GRADIENTS[0], accent: '#A0C0F0', description: '', tags: '', fact: '', image: null, featured: false })
   const set = (k, v) => setF(p => ({ ...p, [k]: v }))
 
   return (
@@ -54,8 +88,8 @@ function ArtworkForm({ artwork, artists, onSave, onCancel }) {
           {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
         </select>
         <input className="field" type="number" placeholder="Year" value={f.year} onChange={e => set('year', +e.target.value)} style={{ marginBottom: 0 }} />
-        <select className="field" value={f.movement} onChange={e => set('movement', e.target.value)} style={{ marginBottom: 0 }}>{MOVEMENTS.map(m => <option key={m}>{m}</option>)}</select>
-        <select className="field" value={f.category} onChange={e => set('category', e.target.value)} style={{ marginBottom: 0 }}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select>
+        <select className="field" value={f.movement} onChange={e => set('movement', e.target.value)} style={{ marginBottom: 0 }}>{movements.map(m => <option key={m}>{m}</option>)}</select>
+        <select className="field" value={f.category} onChange={e => set('category', e.target.value)} style={{ marginBottom: 0 }}>{categories.map(c => <option key={c}>{c}</option>)}</select>
         <input className="field" placeholder="Medium" value={f.medium} onChange={e => set('medium', e.target.value)} style={{ marginBottom: 0 }} />
         <input className="field" placeholder="Dimensions" value={f.dimensions} onChange={e => set('dimensions', e.target.value)} style={{ marginBottom: 0 }} />
         <input className="field" placeholder="Museum / Location" value={f.location} onChange={e => set('location', e.target.value)} style={{ marginBottom: 0, gridColumn: 'span 2' }} />
@@ -131,6 +165,13 @@ export default function AdminScreen() {
   const [tab, setTab] = useState('dashboard')
   const [artworkForm, setArtworkForm] = useState(null)
   const [artistForm, setArtistForm] = useState(null)
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES)
+  const [movements, setMovements] = useState(DEFAULT_MOVEMENTS)
+
+  const addCategory = (cat) => { if (!categories.includes(cat)) setCategories(p => [...p, cat]) }
+  const deleteCategory = (cat) => setCategories(p => p.filter(c => c !== cat))
+  const addMovement = (mov) => { if (!movements.includes(mov)) setMovements(p => [...p, mov]) }
+  const deleteMovement = (mov) => setMovements(p => p.filter(m => m !== mov))
 
   if (!currentUser || currentUser.role !== 'admin') {
     navigate('/login'); return null
@@ -219,15 +260,24 @@ export default function AdminScreen() {
         {/* ARTWORKS */}
         {tab === 'artworks' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {/* Category & Movement Manager */}
+            <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '1.2rem', marginBottom: '1.2rem' }}>
+              <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--dark-text)', marginBottom: '1rem' }}>Manage Categories & Movements</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <TagManager label="Categories" items={categories} onAdd={addCategory} onDelete={deleteCategory} />
+                <TagManager label="Movements / Eras" items={movements} onAdd={addMovement} onDelete={deleteMovement} />
+              </div>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
               <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 26, fontWeight: 300, color: 'var(--dark-text)' }}>Artworks <span style={{ fontSize: 14, fontStyle: 'normal', color: 'var(--light-text)' }}>({artworks.length})</span></div>
               <button onClick={() => setArtworkForm('new')} className="btn btn-primary"><Plus size={12} />Add Artwork</button>
             </div>
-            <AnimatePresence>{artworkForm === 'new' && <ArtworkForm artists={artists} onSave={d => { addArtwork(d); setArtworkForm(null); addNotification('Artwork added! ✨') }} onCancel={() => setArtworkForm(null)} />}</AnimatePresence>
+            <AnimatePresence>{artworkForm === 'new' && <ArtworkForm artists={artists} categories={categories} movements={movements} onSave={d => { addArtwork(d); setArtworkForm(null); addNotification('Artwork added! ✨') }} onCancel={() => setArtworkForm(null)} />}</AnimatePresence>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {artworks.map(art => (
                 <div key={art.id}>
-                  <AnimatePresence>{artworkForm?.id === art.id && <ArtworkForm artwork={artworkForm} artists={artists} onSave={d => { updateArtwork(d); setArtworkForm(null); addNotification('Artwork updated!') }} onCancel={() => setArtworkForm(null)} />}</AnimatePresence>
+                  <AnimatePresence>{artworkForm?.id === art.id && <ArtworkForm artwork={artworkForm} artists={artists} categories={categories} movements={movements} onSave={d => { updateArtwork(d); setArtworkForm(null); addNotification('Artwork updated!') }} onCancel={() => setArtworkForm(null)} />}</AnimatePresence>
                   {artworkForm?.id !== art.id && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex', gap: 12, alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '12px 14px' }}>
                       <div style={{ width: 56, height: 56, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>

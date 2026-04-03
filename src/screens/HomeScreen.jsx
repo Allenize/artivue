@@ -28,7 +28,8 @@ function ArtCard({ art, onFav, isFav, onClick }) {
       <div style={{ padding: '10px 12px' }}>
         <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 15, fontStyle: 'italic', color: 'var(--dark-text)', lineHeight: 1.2 }}>{art.title}</div>
         <div style={{ fontSize: 10, color: 'var(--accent-rust)', margin: '3px 0' }}>{art.artist}</div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="tag">{art.category}</span>
           <span style={{ fontSize: 10, color: 'var(--light-text)' }}>{art.year}</span>
         </div>
       </div>
