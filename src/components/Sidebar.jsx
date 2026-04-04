@@ -1,13 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, Users, Image, Heart, Users2, Sun, Moon, Globe, X, LogOut, User } from 'lucide-react'
+import { Home, Compass, Image, Heart, Users2, Palette, Sun, Moon, Globe, X, LogOut, User } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import ArtivueLogo from '../components/ArtivueLogo'
 
 const NAV = [
   { icon: Home, key: 'home', path: '/home' },
+  { icon: Compass, key: 'explore', path: '/explore' },
   { icon: Image, key: 'artworks', path: '/artworks' },
-  { icon: Users, key: 'artists', path: '/artists' },
+  { icon: Palette, key: 'artists', path: '/artists' },
   { icon: Users2, key: 'community', path: '/community' },
   { icon: Heart, key: 'favorites', path: '/favorites' },
 ]

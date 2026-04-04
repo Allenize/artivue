@@ -4,52 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, Heart, Users } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
-function extractColors(imageUrl, count = 5) {
-  return new Promise((resolve) => {
-    if (!imageUrl) { resolve([]); return }
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      const size = 60; canvas.width = size; canvas.height = size
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, size, size)
-      const data = ctx.getImageData(0, 0, size, size).data
-      const colorMap = {}
-      for (let i = 0; i < data.length; i += 16) {
-        const r = Math.round(data[i] / 32) * 32
-        const g = Math.round(data[i+1] / 32) * 32
-        const b = Math.round(data[i+2] / 32) * 32
-        if (data[i+3] < 128) continue
-        const key = `${r},${g},${b}`
-        colorMap[key] = (colorMap[key] || 0) + 1
-      }
-      const sorted = Object.entries(colorMap).sort((a,b) => b[1]-a[1]).slice(0, count).map(([k]) => {
-        const [r,g,b] = k.split(','); return `rgb(${r},${g},${b})`
-      })
-      resolve(sorted)
-    }
-    img.onerror = () => resolve([])
-    img.src = imageUrl
-  })
-}
-
-function ArtworkColorRow({ imageUrl }) {
-  const [colors, setColors] = useState([])
-  useEffect(() => {
-    if (imageUrl) extractColors(imageUrl, 5).then(setColors)
-    else setColors([])
-  }, [imageUrl])
-  if (!colors.length) return null
-  return (
-    <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
-      {colors.map((color, i) => (
-        <div key={i} title={color} style={{ width: 12, height: 12, borderRadius: '50%', background: color, border: '1.5px solid rgba(0,0,0,0.08)', flexShrink: 0 }} />
-      ))}
-    </div>
-  )
-}
-
 export default function ExploreScreen() {
   const navigate = useNavigate()
   const { artworks, artists, favorites, toggleFavorite, t, viewArtwork } = useApp()
@@ -164,7 +118,6 @@ export default function ExploreScreen() {
                 <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 17, fontStyle: 'italic', color: 'var(--dark-text)', lineHeight: 1.2, marginBottom: 3 }}>{art.title}</div>
                 <div style={{ fontSize: 10, color: 'var(--accent-rust)', marginBottom: 4 }}>{art.artist} · {art.year}</div>
                 <div style={{ fontSize: 10, color: 'var(--light-text)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{art.description}</div>
-                {art.image && <ArtworkColorRow imageUrl={art.image} />}
               </div>
               <div style={{ padding: '10px 12px 0 0' }}>
                 <button onClick={e => { e.stopPropagation(); toggleFavorite(art.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>

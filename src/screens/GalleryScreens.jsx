@@ -1,8 +1,54 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, Heart, ChevronDown } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+
+function extractColors(imageUrl, count = 5) {
+  return new Promise((resolve) => {
+    if (!imageUrl) { resolve([]); return }
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const size = 60; canvas.width = size; canvas.height = size
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, size, size)
+      const data = ctx.getImageData(0, 0, size, size).data
+      const colorMap = {}
+      for (let i = 0; i < data.length; i += 16) {
+        const r = Math.round(data[i] / 32) * 32
+        const g = Math.round(data[i+1] / 32) * 32
+        const b = Math.round(data[i+2] / 32) * 32
+        if (data[i+3] < 128) continue
+        const key = `${r},${g},${b}`
+        colorMap[key] = (colorMap[key] || 0) + 1
+      }
+      const sorted = Object.entries(colorMap).sort((a,b) => b[1]-a[1]).slice(0, count).map(([k]) => {
+        const [r,g,b] = k.split(','); return `rgb(${r},${g},${b})`
+      })
+      resolve(sorted)
+    }
+    img.onerror = () => resolve([])
+    img.src = imageUrl
+  })
+}
+
+function ColorDots({ imageUrl }) {
+  const [colors, setColors] = useState([])
+  useEffect(() => {
+    if (imageUrl) extractColors(imageUrl, 5).then(setColors)
+    else setColors([])
+  }, [imageUrl])
+  if (!colors.length) return null
+  return (
+    <div style={{ display: 'flex', gap: 3, marginTop: 5 }}>
+      {colors.map((color, i) => (
+        <div key={i} title={color} style={{ width: 12, height: 12, borderRadius: '50%', background: color, border: '1.5px solid rgba(0,0,0,0.08)', flexShrink: 0 }} />
+      ))}
+    </div>
+  )
+}
 
 // ── ARTWORKS GALLERY ─────────────────────────────────────────────────
 export function ArtworksScreen() {
@@ -18,14 +64,12 @@ export function ArtworksScreen() {
       </motion.div>
 
       {/* Search */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 16px', marginBottom: '1.2rem' }}
-        onClick={() => navigate('/explore')}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 16px', marginBottom: '1.2rem' }}>
         <Search size={14} strokeWidth={1.5} style={{ color: 'var(--light-text)', flexShrink: 0 }} />
-        <input value={q} onChange={e => { e.stopPropagation(); setQ(e.target.value) }}
-          onClick={e => e.stopPropagation()}
+        <input value={q} onChange={e => setQ(e.target.value)}
           placeholder="Search artworks…"
           style={{ flex: 1, border: 'none', background: 'transparent', fontFamily: 'Jost,sans-serif', fontSize: 13, color: 'var(--dark-text)', outline: 'none' }} />
-        {q && <button onClick={e => { e.stopPropagation(); setQ('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--light-text)' }}><X size={13} /></button>}
+        {q && <button onClick={() => setQ('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--light-text)' }}><X size={13} /></button>}
       </div>
 
       <div className="artwork-grid">
@@ -48,6 +92,7 @@ export function ArtworksScreen() {
                 <span className="tag">{art.movement}</span>
                 <span style={{ fontSize: 10, color: 'var(--light-text)' }}>{art.year}</span>
               </div>
+              {art.image && <ColorDots imageUrl={art.image} />}
             </div>
           </motion.div>
         ))}
@@ -60,19 +105,32 @@ export function ArtworksScreen() {
 export function ArtistsScreen() {
   const { artists, artworks, t } = useApp()
   const [expanded, setExpanded] = useState(null)
+  const [q, setQ] = useState('')
+  const filtered = artists.filter(a => !q || a.name?.toLowerCase().includes(q.toLowerCase()) || a.nationality?.toLowerCase().includes(q.toLowerCase()) || a.era?.toLowerCase().includes(q.toLowerCase()))
   return (
     <div className="page">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '1.5rem' }}>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '1rem' }}>
         <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 26, fontWeight: 300, color: 'var(--dark-text)', marginBottom: 4 }}>{t.artists}</div>
-        <div style={{ fontSize: 11, color: 'var(--light-text)' }}>{artists.length} artists in collection</div>
+        <div style={{ fontSize: 11, color: 'var(--light-text)' }}>{filtered.length} artists in collection</div>
       </motion.div>
+
+      {/* Search bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '10px 16px', marginBottom: '1.2rem', transition: 'border-color .2s' }}
+        onFocus={e => e.currentTarget.style.borderColor = 'var(--accent-rust)'}
+        onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+        <Search size={14} strokeWidth={1.5} style={{ color: 'var(--light-text)', flexShrink: 0 }} />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search artists, nationality, era…"
+          style={{ flex: 1, border: 'none', background: 'transparent', fontFamily: 'Jost,sans-serif', fontSize: 13, color: 'var(--dark-text)', outline: 'none' }} />
+        {q && <button onClick={() => setQ('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--light-text)' }}><X size={13} /></button>}
+      </div>
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {artists.map((artist, i) => {
+        {filtered.map((artist, i) => {
           const works = artworks.filter(a => a.artistId === artist.id)
           const open = expanded === artist.id
           return (
             <motion.div key={artist.id} className="card" style={{ overflow: 'hidden', borderColor: open ? 'var(--accent-rust)' : 'var(--border)' }}
-              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * .05 }}>
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * .04 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', cursor: 'pointer' }} onClick={() => setExpanded(open ? null : artist.id)}>
                 <div style={{ width: 54, height: 54, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--border)' }}>
                   {artist.image ? <img src={artist.image} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', background: artist.color || artist.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cormorant Garamond,serif', fontSize: 18, color: '#fff', fontStyle: 'italic' }}>{artist.initials}</div>}
@@ -108,6 +166,12 @@ export function ArtistsScreen() {
             </motion.div>
           )
         })}
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--light-text)' }}>
+            <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 20, marginBottom: 6 }}>No artists found</div>
+            <div style={{ fontSize: 12 }}>Try a different search term</div>
+          </div>
+        )}
       </div>
     </div>
   )
