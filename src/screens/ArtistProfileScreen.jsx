@@ -25,7 +25,7 @@ export default function ArtistProfileScreen() {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,.2), rgba(0,0,0,.7))' }} />
         <motion.button
           style={{ position: 'absolute', top: 18, left: 18, background: 'rgba(250,246,238,.9)', backdropFilter: 'blur(4px)', border: '1px solid var(--border)', borderRadius: 10, padding: '7px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--dark-text)', fontFamily: 'Jost,sans-serif' }}
-          onClick={() => navigate(-1)} whileTap={{ scale: .95 }}>
+          onClick={() => navigate('/artists')} whileTap={{ scale: .95 }}>
           <ArrowLeft size={13} /> Back
         </motion.button>
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1.5rem 1.8rem', display: 'flex', alignItems: 'flex-end', gap: 16 }}>
@@ -94,3 +94,4 @@ export default function ArtistProfileScreen() {
     </div>
   )
 }
+// Already complete - file is good
