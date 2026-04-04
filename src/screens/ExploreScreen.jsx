@@ -69,7 +69,7 @@ export default function ExploreScreen() {
               {filteredArtists.map(artist => (
                 <motion.div key={artist.id}
                   style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer', width: 60 }}
-                  onClick={() => navigate('/artists')}
+                  onClick={() => navigate('/artist/' + artist.id)}
                   whileHover={{ y: -2 }}>
                   <div style={{ width: 48, height: 48, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border)' }}>
                     {artist.image
@@ -116,7 +116,7 @@ export default function ExploreScreen() {
               </div>
               <div style={{ flex: 1, padding: '10px 0', minWidth: 0 }}>
                 <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 17, fontStyle: 'italic', color: 'var(--dark-text)', lineHeight: 1.2, marginBottom: 3 }}>{art.title}</div>
-                <div style={{ fontSize: 10, color: 'var(--accent-rust)', marginBottom: 4 }}>{art.artist} · {art.year}</div>
+                <div style={{ fontSize: 10, color: 'var(--accent-rust)', marginBottom: 4, cursor: 'pointer' }} onClick={e => { e.stopPropagation(); if(art.artistId) navigate('/artist/' + art.artistId) }}>{art.artist} · {art.year}</div>
                 <div style={{ fontSize: 10, color: 'var(--light-text)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{art.description}</div>
               </div>
               <div style={{ padding: '10px 12px 0 0' }}>

@@ -7,6 +7,7 @@ import HomeScreen from './screens/HomeScreen'
 import ExploreScreen from './screens/ExploreScreen'
 import { ArtworksScreen, ArtistsScreen, FavoritesScreen } from './screens/GalleryScreens'
 import ArtworkDetailScreen from './screens/ArtworkDetailScreen'
+import ArtistProfileScreen from './screens/ArtistProfileScreen'
 import CommunityScreen from './screens/CommunityScreen'
 import AdminScreen from './admin/AdminScreen'
 
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/artworks" element={<ArtworksScreen />} />
             <Route path="/artwork/:id" element={<ArtworkDetailScreen />} />
             <Route path="/artists" element={<ArtistsScreen />} />
+            <Route path="/artist/:id" element={<ArtistProfileScreen />} />
             <Route path="/favorites" element={<FavoritesScreen />} />
             <Route path="/community" element={<CommunityScreen />} />
           </Route>

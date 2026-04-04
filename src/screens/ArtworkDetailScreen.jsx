@@ -139,7 +139,7 @@ export default function ArtworkDetailScreen() {
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--dark-text)', marginBottom: 10 }}>{t.artistProfile}</div>
             <motion.div className="card" style={{ padding: 16, display: 'flex', gap: 14, alignItems: 'flex-start', cursor: 'pointer' }}
-              onClick={() => navigate('/artists')} whileHover={{ x: 2 }}>
+              onClick={() => navigate('/artist/' + artist.id)} whileHover={{ x: 2 }}>
               <div style={{ width: 52, height: 52, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--border)' }}>
                 {artist.image ? <img src={artist.image} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', background: artist.color || artist.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cormorant Garamond,serif', fontSize: 18, color: '#fff', fontStyle: 'italic' }}>{artist.initials}</div>}
               </div>

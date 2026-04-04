@@ -172,7 +172,7 @@ export default function HomeScreen() {
         {/* Artists — no chevrons, scrollable, no scrollbar, responsive count */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.8rem' }}>
           <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--dark-text)' }}>{t.artists}</div>
-          <button onClick={() => navigate('/artists')} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--accent-rust)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+          <button onClick={() => navigate('/artist/' + artist.id)} style={{ background: 'none', border: 'none', fontSize: 11, color: 'var(--accent-rust)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
             See all <ChevronRight size={11} />
           </button>
         </div>
@@ -184,7 +184,7 @@ export default function HomeScreen() {
             <motion.div key={artist.id}
               style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, cursor: 'pointer',
                 width: 'clamp(48px, 13vw, 68px)' }}
-              onClick={() => navigate('/artists')}
+              onClick={() => navigate('/artist/' + artist.id)}
               initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .04 + i * .03 }}
               whileHover={{ y: -2 }}>
               <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border)', flexShrink: 0, transition: 'border-color .2s' }}>
