@@ -129,3 +129,25 @@ export async function getUserFavorites(userId) {
     return snap.data()?.favorites || []
   } catch(e) { return [] }
 }
+
+// ── SETTINGS (categories, movements) ─────────────────────────────────
+export async function getSettings() {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'taxonomy'))
+    return snap.exists() ? snap.data() : {}
+  } catch(e) { return {} }
+}
+
+export async function saveSettings(data) {
+  await updateDoc(doc(db, 'settings', 'taxonomy'), data).catch(async () => {
+    // Create if doesn't exist
+    const { setDoc } = await import('firebase/firestore')
+    await setDoc(doc(db, 'settings', 'taxonomy'), data)
+  })
+}
+
+// ── ARTWORK COMMENTS ─────────────────────────────────────────────────
+export async function addArtworkComment(artworkId, userId, userName, text) {
+  const comment = { id: Date.now().toString(), userId, userName, text, time: Date.now() }
+  await updateDoc(doc(db, 'artworks', artworkId), { comments: arrayUnion(comment) })
+}

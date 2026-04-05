@@ -193,6 +193,12 @@ export function AppProvider({ children }) {
     await loadData()
   }, [currentUser, loadData])
 
+  const addArtworkComment = useCallback(async (artworkId, text) => {
+    if (!currentUser || !text.trim()) return
+    await dbService.addArtworkComment(artworkId, currentUser.uid, currentUser.name || currentUser.displayName, text)
+    await loadData()
+  }, [currentUser, loadData])
+
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en
 
   return (
@@ -204,7 +210,7 @@ export function AppProvider({ children }) {
       dataLoading, loadData,
       addArtwork, updateArtwork, deleteArtwork, likeArtwork, viewArtwork,
       addArtist, updateArtist, deleteArtist,
-      addPost, approvePost, deletePost, likePost, addComment,
+      addPost, approvePost, deletePost, likePost, addComment, addArtworkComment,
       notifications, addNotification,
     }}>
       {children}
