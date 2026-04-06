@@ -162,8 +162,16 @@ export function AppProvider({ children }) {
 
   const addPost = useCallback(async (data) => {
     if (!currentUser) return
-    const { _imageBase64, ...rest } = data
-    await dbService.addCommunityPost(rest, currentUser.uid, currentUser.name || currentUser.displayName, currentUser.initials || (currentUser.displayName || 'U').slice(0, 2).toUpperCase(), _imageBase64)
+    const { image, ...rest } = data
+    const imageBase64 = image?.startsWith('data:') ? image : null
+    const imageUrl = image?.startsWith('http') ? image : null
+    await dbService.addCommunityPost(
+      { ...rest, status: 'pending', image: imageUrl },
+      currentUser.uid,
+      currentUser.name || currentUser.displayName,
+      currentUser.initials || (currentUser.displayName || 'U').slice(0, 2).toUpperCase(),
+      imageBase64
+    )
     await loadData()
   }, [currentUser, loadData])
 
