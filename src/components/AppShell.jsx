@@ -24,7 +24,7 @@ export default function AppShell() {
           </button>
           <ArtivueLogo size={28} />
           <span style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 16, fontWeight: 500, letterSpacing: '.15em', textTransform: 'uppercase', color: 'var(--dark-text)', flex: 1 }}>
-            Artivue
+            Artistic Vision
           </span>
           {/* Admin back button — only for admins */}
           {currentUser?.role === 'admin' && (

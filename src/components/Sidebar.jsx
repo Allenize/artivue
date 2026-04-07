@@ -24,7 +24,7 @@ function SidebarContent({ onClose }) {
       <div style={{ padding: '1.8rem 1.5rem 1.2rem', borderBottom: '1px solid rgba(237,230,214,.08)', display: 'flex', alignItems: 'center', gap: 10 }}>
         <ArtivueLogo size={34} />
         <div>
-          <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 15, color: 'var(--sidebar-text)', letterSpacing: '.12em', textTransform: 'uppercase', lineHeight: 1.15 }}>Artivue</div>
+          <div style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 15, color: 'var(--sidebar-text)', letterSpacing: '.12em', textTransform: 'uppercase', lineHeight: 1.15 }}>Artistic Vision</div>
         </div>
         {onClose && <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(237,230,214,.4)', cursor: 'pointer' }}><X size={16} /></button>}
       </div>

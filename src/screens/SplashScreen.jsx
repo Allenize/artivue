@@ -16,7 +16,7 @@ export default function SplashScreen() {
         <ArtivueLogo size={120} />
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .45, duration: .6 }} style={{ fontFamily: 'Cormorant Garamond,serif', fontSize: 46, fontWeight: 300, color: 'var(--dark-text)', letterSpacing: '.12em', textTransform: 'uppercase', marginTop: '1.2rem', textAlign: 'center' }}>
-        Artivue
+        Artistic Vision
       </motion.div>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .75, duration: .6 }} style={{ fontSize: 11, color: 'var(--light-text)', letterSpacing: '.2em', marginTop: '.5rem', textTransform: 'uppercase' }}>
         A Digital Art Museum

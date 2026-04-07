@@ -21,7 +21,7 @@ export default function LoginScreen() {
     try {
       const result = await login(form.email.trim(), form.password)
       if (result.success) {
-        addNotification('Welcome to Artivue! 🎨')
+        addNotification('Welcome to Artistic Vision! 🎨')
         navigate(result.role === 'admin' ? '/admin' : '/home', { replace: true })
       } else {
         setError(result.error || 'Login failed. Please check your email and password.')
@@ -63,7 +63,7 @@ export default function LoginScreen() {
             {mode === 'login' ? 'Welcome Back' : 'Join Us'}
           </div>
           <div style={{ fontSize: 10, color: 'var(--light-text)', letterSpacing: '.18em', textTransform: 'uppercase', marginTop: 4 }}>
-            Artivue
+            Artistic Vision
           </div>
         </div>
 
