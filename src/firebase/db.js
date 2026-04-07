@@ -85,8 +85,41 @@ export async function getCommunityPosts() {
 
 export async function addCommunityPost(data, userId, userName, userInitials, imageBase64) {
   const payload = { ...data, userId, userName, userInitials, likes: [], comments: [], status: 'pending', createdAt: serverTimestamp() }
-  if (imageBase64) payload.image = imageBase64
-  return await addDoc(collection(db, 'community'), payload)
+  if (imageBase64) {
+    try {
+      // Keep compressing until under 700KB (Firestore doc limit is 1MB, leave room for other fields)
+      let compressed = await compressImage(imageBase64, 800, 0.7)
+      if (compressed.length > 700000) compressed = await compressImage(compressed, 600, 0.6)
+      if (compressed.length > 700000) compressed = await compressImage(compressed, 400, 0.5)
+      if (compressed.length > 700000) compressed = await compressImage(compressed, 300, 0.4)
+      console.log('[addCommunityPost] image size after compression:', Math.round(compressed.length / 1024), 'KB')
+      payload.image = compressed
+    } catch(e) {
+      console.warn('Image compression failed, saving post without image:', e)
+    }
+  }
+  const result = await addDoc(collection(db, 'community'), payload)
+  console.log('[addCommunityPost] saved with id:', result.id)
+  return result
+}
+
+// Compress a base64 image to a max width and quality using canvas
+function compressImage(base64, maxWidth = 800, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image()
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width)
+      const w = Math.round(img.width * scale)
+      const h = Math.round(img.height * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.onerror = reject
+    img.src = base64
+  })
 }
 
 export async function approvePost(id) {
