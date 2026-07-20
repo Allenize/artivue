@@ -31,9 +31,6 @@ Artivue (internally named `artistic-vision` in `package.json`) is a single-page 
 - **Admin dashboard** (`/admin`, role-gated) — create, edit, and delete artworks and artists, including image uploads
 - **Animated UI** — transitions and micro-interactions powered by Framer Motion, icons from Lucide
 
-## Preview
-
-> Add screenshots here.
 
 ## Tech Stack
 
