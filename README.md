@@ -33,17 +33,25 @@ Artivue is a web application that provides a modern platform for browsing and sh
 
 > Add screenshots here.
 
-## Installation
+## Getting Started
+
+### Clone the repository
 
 ```bash
 git clone https://github.com/Allenize/artivue.git
-
-cd artivue
-
-npm install
-
-npm run dev
 ```
+
+### Open the project
+
+```bash
+cd artivue
+```
+
+### Run the project
+
+Open `index.html` in your preferred web browser.
+
+> **Note:** For the best experience, use a local web server (such as the Live Server extension in Visual Studio Code) to avoid browser restrictions on local files.
 
 ## Project Structure
 
